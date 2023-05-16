@@ -1,0 +1,8 @@
+C:\Users\giule\source\repos\AllogEnter_Modulo1_Banco\TrabalhandoComArquivo.csv\CrudClienteCsv\CrudClienteCsv\bin\Debug\CrudClienteCsv.exe.config
+C:\Users\giule\source\repos\AllogEnter_Modulo1_Banco\TrabalhandoComArquivo.csv\CrudClienteCsv\CrudClienteCsv\bin\Debug\CrudClienteCsv.exe
+C:\Users\giule\source\repos\AllogEnter_Modulo1_Banco\TrabalhandoComArquivo.csv\CrudClienteCsv\CrudClienteCsv\bin\Debug\CrudClienteCsv.pdb
+C:\Users\giule\source\repos\AllogEnter_Modulo1_Banco\TrabalhandoComArquivo.csv\CrudClienteCsv\CrudClienteCsv\obj\Debug\CrudClienteCsv.csproj.AssemblyReference.cache
+C:\Users\giule\source\repos\AllogEnter_Modulo1_Banco\TrabalhandoComArquivo.csv\CrudClienteCsv\CrudClienteCsv\obj\Debug\CrudClienteCsv.csproj.SuggestedBindingRedirects.cache
+C:\Users\giule\source\repos\AllogEnter_Modulo1_Banco\TrabalhandoComArquivo.csv\CrudClienteCsv\CrudClienteCsv\obj\Debug\CrudClienteCsv.csproj.CoreCompileInputs.cache
+C:\Users\giule\source\repos\AllogEnter_Modulo1_Banco\TrabalhandoComArquivo.csv\CrudClienteCsv\CrudClienteCsv\obj\Debug\CrudClienteCsv.exe
+C:\Users\giule\source\repos\AllogEnter_Modulo1_Banco\TrabalhandoComArquivo.csv\CrudClienteCsv\CrudClienteCsv\obj\Debug\CrudClienteCsv.pdb
