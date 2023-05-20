@@ -1,168 +1,214 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
 using Npgsql;
 
-namespace exercicio_bd {
-    public class DatabaseHelper {
+namespace exercicio_bd
+{
+    class DatabaseHelper
+    {
+        private const string CONNECTION_STRING = "Host=localhost;Username=postgres;Password=1973;Database=cliente_bd";
+        private const string TABELA_NOME = "Cliente";
         private NpgsqlConnection npgsqlConnection;
-        private const string TABELA_NOME = "cliente";
-        public DatabaseHelper() {
-            var builder = new NpgsqlConnectionStringBuilder();
-            builder.Host = "localhost";
-            builder.Port = 5432;
-            builder.Username = "postgres";
-            builder.Password = "1973";
-            builder.Database = "cliente_bd";
-            npgsqlConnection = new NpgsqlConnection(builder.ConnectionString);
-            npgsqlConnection.Open();
+
+        public DatabaseHelper()
+        {
+            npgsqlConnection = new NpgsqlConnection(CONNECTION_STRING);
         }
 
-        public void fecharConexao() {
-            npgsqlConnection.Close();
-        }
-
-        public async Task criarTabela() { // somente se ainda não existir
-            var comandoSql = $"CREATE TABLE IF NOT EXISTS {TABELA_NOME}" +
-                $"(" +
-                    $"id serial PRIMARY KEY, " +
-                    $"nome VARCHAR (100), " +
-                    $"endereco VARCHAR (100), " +
-                    $"telefone VARCHAR (15), " +
-                    $"email VARCHAR (255)" +
-                $");";
-            using var cmd = new NpgsqlCommand(comandoSql, npgsqlConnection);
-            await cmd.ExecuteNonQueryAsync();
-        }
-
-        private async Task insertOrUpdateOrDeleteCliente (string comandoSql, int id, bool deletar) {
-            Cliente cliente = new Cliente();
-            if (!deletar) { // para a adição e edição o usuário informa todos os dados do cliente.
-                cliente = informarDadosCliente();
-            }
-            await using (var param = new NpgsqlCommand(comandoSql, npgsqlConnection)) {
-                if (id != 0) {
-                    param.Parameters.AddWithValue("id", id);
-                }
-                if (cliente.nome != null) {
-                    param.Parameters.AddWithValue("nome", cliente.nome);
-                }
-                if (cliente.endereco != null) {
-                    param.Parameters.AddWithValue("endereco", cliente.endereco);
-                }
-                if (cliente.telefone != null) {
-                    param.Parameters.AddWithValue("telefone", cliente.telefone);
-                }
-                if (cliente.email != null) {
-                    param.Parameters.AddWithValue("email", cliente.email);
-                }
-                await param.ExecuteNonQueryAsync();
+        public async Task AbrirConexao()
+        {
+            if (npgsqlConnection.State != ConnectionState.Open)
+            {
+                await npgsqlConnection.OpenAsync();
             }
         }
 
-        public async Task cadastrar() {
-            string comandoSql = $"INSERT INTO {TABELA_NOME} (nome, endereco, telefone, email) VALUES (@nome, @endereco, @telefone, @email)";
-            await insertOrUpdateOrDeleteCliente(comandoSql, 0, false);
-            Console.WriteLine("Cliente cadastrado!");
-        }
-
-        public async Task editar(int id) {
-            if (listarPeloId(id).Result == null) {
-                Console.WriteLine("ID do cliente não cadastrado!");
-            } else {
-                var comandoSql = $"UPDATE {TABELA_NOME} SET nome = @nome, endereco = @endereco, telefone = @telefone, email = @email WHERE id = @id";
-                await insertOrUpdateOrDeleteCliente(comandoSql, id, false);
-                Console.WriteLine("Cliente atualizado!");
+        public async Task FecharConexao()
+        {
+            if (npgsqlConnection.State != ConnectionState.Closed)
+            {
+                npgsqlConnection.Close();
             }
         }
 
-        public async Task excluir(int id) {
-            if (listarPeloId(id).Result == null) {
-                Console.WriteLine("ID do cliente não cadastrado!");
-            } else {
-                string comandoSql = $"DELETE FROM {TABELA_NOME} WHERE id=@id";
-                await insertOrUpdateOrDeleteCliente(comandoSql, id, true);
-                Console.WriteLine("Cliente excluído!");
-            }
+        private Cliente DadosCliente(NpgsqlDataReader reader)
+        {
+            int id = Convert.ToInt32(reader["id"]);
+            string nome = Convert.ToString(reader["nome"]);
+            string endereco = Convert.ToString(reader["endereco"]);
+            string telefone = Convert.ToString(reader["telefone"]);
+            string email = Convert.ToString(reader["email"]);
+            return new Cliente(id, nome, endereco, telefone, email);
         }
 
-        public async Task<Cliente?> listarPeloId(int id) {
-            string commandText = $"SELECT * FROM {TABELA_NOME} WHERE id = @id";
-            await using (var param = new NpgsqlCommand(commandText, npgsqlConnection)) {
-                param.Parameters.AddWithValue("id", id);
-                await using (var reader = await param.ExecuteReaderAsync())
-                while (await reader.ReadAsync()) {
-                    Cliente cliente = dadosCliente(reader);
-                    return cliente;
+        public async Task CriarTabela()
+        {
+            {
+                await AbrirConexao(); // Open the database connection
+
+                try
+                {
+                    string commandText = $"CREATE TABLE IF NOT EXISTS {TABELA_NOME} (id serial PRIMARY KEY, nome VARCHAR(50), endereco VARCHAR(100), telefone VARCHAR(20), email VARCHAR(50))";
+                    using (var cmd = new NpgsqlCommand(commandText, npgsqlConnection))
+                    {
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+                finally
+                {
+                    await FecharConexao(); // Close the database connection
                 }
             }
-            return null;
         }
 
-        public async Task<List<Cliente>> listarTodos() {
-            string commandText = $"SELECT * FROM {TABELA_NOME} ORDER BY id";
-            await using (var param = new NpgsqlCommand(commandText, npgsqlConnection)) {
-                List<Cliente> clientes = new List<Cliente>();
-                await using (var reader = await param.ExecuteReaderAsync())
-                while (await reader.ReadAsync()) {
-                    clientes.Add(dadosCliente(reader));
+        public async Task Cadastrar()
+{
+    Console.WriteLine("Informe os dados do cliente:");
+    Cliente cliente = await InformarDadosCliente();
+
+    await AbrirConexao(); // Abre a conexão com o banco de dados
+
+    string commandText = $"INSERT INTO {TABELA_NOME} (nome, endereco, telefone, email) VALUES (@nome, @endereco, @telefone, @email)";
+    using (var cmd = new NpgsqlCommand(commandText, npgsqlConnection))
+    {
+        cmd.Parameters.AddWithValue("nome", cliente.Nome);
+        cmd.Parameters.AddWithValue("endereco", cliente.Endereco);
+        cmd.Parameters.AddWithValue("telefone", cliente.Telefone);
+        cmd.Parameters.AddWithValue("email", cliente.Email);
+
+        await cmd.ExecuteNonQueryAsync();
+        Console.WriteLine("Cliente cadastrado com sucesso!");
+    }
+
+    await FecharConexao(); // Fecha a conexão com o banco de dados
+}
+
+        public async Task Editar(int id)
+{
+    Cliente clienteExistente = await ListarPeloId(id);
+    if (clienteExistente == null)
+    {
+        Console.WriteLine("Cliente não encontrado!");
+        return;
+    }
+
+    Console.WriteLine("Informe os novos dados do cliente:");
+    Cliente clienteAtualizado = await InformarDadosCliente();
+
+    await AbrirConexao(); // Abre a conexão com o banco de dados
+
+    string commandText = $"UPDATE {TABELA_NOME} SET nome = @nome, endereco = @endereco, telefone = @telefone, email = @email WHERE id = @id";
+    using (var cmd = new NpgsqlCommand(commandText, npgsqlConnection))
+    {
+        cmd.Parameters.AddWithValue("nome", clienteAtualizado.Nome);
+        cmd.Parameters.AddWithValue("endereco", clienteAtualizado.Endereco);
+        cmd.Parameters.AddWithValue("telefone", clienteAtualizado.Telefone);
+        cmd.Parameters.AddWithValue("email", clienteAtualizado.Email);
+        cmd.Parameters.AddWithValue("id", id);
+
+        await cmd.ExecuteNonQueryAsync();
+        Console.WriteLine("Cliente atualizado com sucesso!");
+    }
+
+    await FecharConexao(); // Fecha a conexão com o banco de dados
+}
+
+        public async Task Excluir(int id)
+{
+    Cliente clienteExistente = await ListarPeloId(id);
+    if (clienteExistente == null)
+    {
+        Console.WriteLine("Cliente não encontrado!");
+        return;
+    }
+
+    await AbrirConexao(); // Abre a conexão com o banco de dados
+
+    string commandText = $"DELETE FROM {TABELA_NOME} WHERE id = @id";
+    using (var cmd = new NpgsqlCommand(commandText, npgsqlConnection))
+    {
+        cmd.Parameters.AddWithValue("id", id);
+
+        await cmd.ExecuteNonQueryAsync();
+        Console.WriteLine("Cliente excluído com sucesso!");
+    }
+
+    await FecharConexao(); // Fecha a conexão com o banco de dados
+}
+
+        public async Task<List<Cliente>> ListarTodos()
+        {
+            {
+                await AbrirConexao(); // Open the database connection
+
+                try
+                {
+                    List<Cliente> clientes = new List<Cliente>();
+
+                    string commandText = $"SELECT * FROM {TABELA_NOME}";
+                    using (var cmd = new NpgsqlCommand(commandText, npgsqlConnection))
+                    {
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                Cliente cliente = DadosCliente(reader);
+                                clientes.Add(cliente);
+                            }
+                        }
+                    }
+
+                    return clientes;
                 }
-                return clientes;
+                finally
+                {
+                    await FecharConexao(); // Close the database connection
+                }
             }
         }
 
-        private static Cliente dadosCliente(NpgsqlDataReader reader) {
-            int? id = reader["id"] as int?;
-            string? nome = reader["nome"] as string;
-            string? endereco = reader["endereco"] as string;
-            string? telefone = reader["telefone"] as string;
-            string? email = reader["email"] as string;
+        public async Task<Cliente> ListarPeloId(int id)
+{
+    await AbrirConexao(); // Abre a conexão com o banco de dados
 
-            Cliente cliente = new Cliente();
-            if (id != null) {
-                cliente.id = id.Value;
+    string commandText = $"SELECT * FROM {TABELA_NOME} WHERE id = @id";
+    using (var cmd = new NpgsqlCommand(commandText, npgsqlConnection))
+    {
+        cmd.Parameters.AddWithValue("id", id);
+
+        using (var reader = await cmd.ExecuteReaderAsync())
+        {
+            if (await reader.ReadAsync())
+            {
+                Cliente cliente = DadosCliente(reader);
+                await FecharConexao(); // Fecha a conexão com o banco de dados
+                return cliente;
             }
-            cliente.nome = nome;
-            cliente.endereco = endereco;
-            cliente.telefone = telefone;
-            cliente.email = email;
+        }
+    }
+
+    await FecharConexao(); // Fecha a conexão com o banco de dados
+    return null;
+}
+
+        public async Task<Cliente> InformarDadosCliente()
+        {
+            Console.Write("Nome: ");
+            string nome = Console.ReadLine();
+
+            Console.Write("Endereço: ");
+            string endereco = Console.ReadLine();
+
+            Console.Write("Telefone: ");
+            string telefone = Console.ReadLine();
+
+            Console.Write("Email: ");
+            string email = Console.ReadLine();
+
+            Cliente cliente = new Cliente(nome, endereco, telefone, email);
             return cliente;
-        }
-
-        private Cliente informarDadosCliente () {
-            Cliente cliente = new Cliente();
-            Console.WriteLine("Informe o nome: ");
-            cliente.nome = Console.ReadLine();
-            Console.WriteLine("Informe o endereço: ");
-            cliente.endereco = Console.ReadLine();
-            Console.WriteLine("Informe o telefone: ");
-            cliente.telefone = Console.ReadLine();
-            bool emailValido = false;
-            string? email = "";
-            while (!emailValido) {
-                Console.WriteLine("Informe o e-mail: ");
-                email = Console.ReadLine();
-                emailValido = validarEmail(email);
-                if (!emailValido) {
-                    Console.WriteLine("E-mail inválido, informe novamente!");
-                }
-            }
-            cliente.email = email;
-            return cliente;
-        }
-
-        private bool validarEmail (string? email) {
-            if (email == null) {
-                return false;
-            }
-            var trimEmail = email.Trim();
-            if (trimEmail.EndsWith(".")) {
-                return false;
-            }
-            try {
-                var endereco = new System.Net.Mail.MailAddress(email);
-                return endereco.Address == trimEmail;
-            }
-            catch {
-                return false;
-            }
         }
     }
 }
