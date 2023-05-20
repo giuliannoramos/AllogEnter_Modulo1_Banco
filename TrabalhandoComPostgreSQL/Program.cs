@@ -47,10 +47,12 @@ namespace exercicio_bd
                         break;
                     case 4: // Listar Todos
                         List<Cliente> clientes = await databaseHelper.ListarTodos();
-                        Console.WriteLine("ID \t Nome \t\t\t Endereço \t\t\t Telefone \t\t E-mail");
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.WriteLine("\n=== Lista de clientes ===");
+                        Console.ResetColor();
                         foreach (Cliente cliente in clientes)
                         {
-                            Console.WriteLine(cliente.Id + " \t " + cliente.Nome + " \t\t\t " + cliente.Endereco + " \t\t\t " + cliente.Telefone + " \t\t " + cliente.Email);
+                            Console.WriteLine($"\nId: {cliente.Id} | Nome: {cliente.Nome} | Endereço: {cliente.Endereco} | Telefone: {cliente.Telefone} | E-mail: {cliente.Email}");
                         }
                         break;
                     case 5: // Pesquisar por ID
